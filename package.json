@@ -1,0 +1,26 @@
+{
+  "name": "karsenz-pickup-logistics",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "node scripts/workspaces.mjs dev",
+    "build": "node scripts/workspaces.mjs build",
+    "lint": "node scripts/workspaces.mjs lint",
+    "type-check": "node scripts/workspaces.mjs type-check",
+    "test": "node scripts/workspaces.mjs test",
+    "test:e2e": "playwright test",
+    "db:migrate": "node scripts/pnpm.mjs --filter @karsenz/api prisma migrate dev",
+    "db:seed": "node scripts/pnpm.mjs --filter @karsenz/api prisma db seed",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.54.2",
+    "eslint": "^9.31.0",
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.5",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.64.0"
+  }
+}

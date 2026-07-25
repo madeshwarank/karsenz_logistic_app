@@ -1,0 +1,14 @@
+node_modules
+.next
+dist
+coverage
+.turbo
+.env
+.env.local
+uploads
+playwright-report
+test-results
+*.log
+*.tsbuildinfo
+work/
+outputs/demo-screens/

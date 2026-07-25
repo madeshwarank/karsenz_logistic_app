@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@karsenz/shared-types": ["packages/shared-types/src"],
+      "@karsenz/validation": ["packages/validation/src"],
+      "@karsenz/ui": ["packages/ui/src"]
+    }
+  }
+}
