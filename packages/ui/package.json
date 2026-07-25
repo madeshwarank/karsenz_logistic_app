@@ -1,0 +1,21 @@
+{
+  "name": "@karsenz/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "src/index.tsx",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "test": "echo ui"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "react": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "typescript": "^5.8.3"
+  }
+}

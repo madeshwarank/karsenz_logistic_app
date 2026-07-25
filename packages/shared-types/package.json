@@ -1,0 +1,16 @@
+{
+  "name": "@karsenz/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "test": "echo shared-types"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

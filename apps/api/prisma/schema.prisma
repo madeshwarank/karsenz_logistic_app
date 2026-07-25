@@ -1,0 +1,385 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  SUPER_ADMIN
+  ADMIN
+  CUSTOMER_SERVICE
+  DISPATCHER
+  DRIVER
+  WORKSHOP
+  MANAGER
+}
+
+enum BookingStatus {
+  DRAFT
+  SCHEDULED
+  UNASSIGNED
+  ASSIGNED
+  DRIVER_ACCEPTED
+  DRIVER_REJECTED
+  TRIP_STARTED
+  ARRIVED_AT_CUSTOMER
+  INSPECTION_IN_PROGRESS
+  VEHICLE_PICKED_UP
+  EN_ROUTE_TO_BRANCH
+  ARRIVED_AT_BRANCH
+  HANDOVER_PENDING
+  COMPLETED
+  RESCHEDULED
+  CANCELLED
+  FAILED
+}
+
+enum TimeSlot {
+  MORNING
+  AFTERNOON
+  EVENING
+  CUSTOM
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum DriverState {
+  AVAILABLE
+  ASSIGNED
+  BUSY
+  ON_LEAVE
+  OFFLINE
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model User {
+  id                String          @id @default(uuid()) @db.Uuid
+  email             String          @unique
+  name              String
+  passwordHash      String
+  branchId          String?         @db.Uuid
+  branch            Branch?         @relation(fields: [branchId], references: [id])
+  isActive          Boolean         @default(true)
+  refreshTokenHash  String?
+  roles             UserRole[]
+  driverProfile     DriverProfile?
+  createdBookings   PickupBooking[] @relation("CreatedBookings")
+  auditLogs         AuditLog[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model Role {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        RoleName     @unique
+  description String
+  users       UserRole[]
+  permissions Permission[]
+}
+
+model Permission {
+  id     String @id @default(uuid()) @db.Uuid
+  action String @unique
+  roles  Role[]
+}
+
+model UserRole {
+  userId String @db.Uuid
+  roleId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model Branch {
+  id              String             @id @default(uuid()) @db.Uuid
+  name            String
+  code            String             @unique
+  address         String
+  city            String             @default("Chennai")
+  phone           String
+  dailyCapacity   Int                @default(8)
+  users           User[]
+  drivers         DriverProfile[]
+  bookings        PickupBooking[]
+  driverAvailability DriverAvailability[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+model DriverProfile {
+  id                  String               @id @default(uuid()) @db.Uuid
+  userId              String               @unique @db.Uuid
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId            String               @db.Uuid
+  branch              Branch               @relation(fields: [branchId], references: [id])
+  licenseNumber       String
+  phone               String
+  currentState        DriverState          @default(AVAILABLE)
+  activeAssignmentId  String?              @db.Uuid
+  availability        DriverAvailability[]
+  assignments         DriverAssignment[]
+  assignedBookings    PickupBooking[]
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model DriverAvailability {
+  id              String       @id @default(uuid()) @db.Uuid
+  driverProfileId String       @db.Uuid
+  branchId        String       @db.Uuid
+  date            DateTime
+  shiftStart      DateTime
+  shiftEnd        DateTime
+  state           DriverState  @default(AVAILABLE)
+  notes           String?
+  driverProfile   DriverProfile @relation(fields: [driverProfileId], references: [id], onDelete: Cascade)
+  branch          Branch       @relation(fields: [branchId], references: [id])
+
+  @@index([date, state])
+  @@index([driverProfileId, date])
+}
+
+model Customer {
+  id           String            @id @default(uuid()) @db.Uuid
+  name         String
+  primaryPhone String            @unique
+  alternatePhone String?
+  addresses    CustomerAddress[]
+  vehicles     Vehicle[]
+  bookings     PickupBooking[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([primaryPhone])
+}
+
+model CustomerAddress {
+  id          String   @id @default(uuid()) @db.Uuid
+  customerId  String   @db.Uuid
+  line1       String
+  landmark    String?
+  city        String
+  postalCode  String
+  latitude    Decimal? @db.Decimal(10, 7)
+  longitude   Decimal? @db.Decimal(10, 7)
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model Vehicle {
+  id                 String          @id @default(uuid()) @db.Uuid
+  customerId         String          @db.Uuid
+  registrationNumber String          @unique
+  manufacturer       String
+  model              String
+  year               Int
+  fuelType           String
+  transmissionType   String
+  customer           Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  bookings           PickupBooking[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([registrationNumber])
+}
+
+model PickupBooking {
+  id                         String                 @id @default(uuid()) @db.Uuid
+  referenceNumber            String                 @unique
+  scheduledPickupAt          DateTime
+  preferredTimeSlot          TimeSlot
+  customTimeSlot             String?
+  customerId                 String                 @db.Uuid
+  vehicleId                  String                 @db.Uuid
+  customerName               String
+  primaryPhone               String
+  alternatePhone             String?
+  pickupAddress              String
+  landmark                   String?
+  city                       String
+  postalCode                 String
+  latitude                   Decimal?               @db.Decimal(10, 7)
+  longitude                  Decimal?               @db.Decimal(10, 7)
+  vehicleRegistrationNumber  String
+  vehicleManufacturer        String
+  vehicleModel               String
+  vehicleYear                Int
+  fuelType                   String
+  transmissionType           String
+  serviceComplaint           String
+  pickupInstructions         String?
+  destinationBranchId        String                 @db.Uuid
+  assignedDriverId           String?                @db.Uuid
+  priority                   Priority               @default(NORMAL)
+  bookingSource              String
+  currentStatus              BookingStatus          @default(UNASSIGNED)
+  internalNotes              String?
+  cancellationReason         String?
+  rescheduleReason           String?
+  createdById                String                 @db.Uuid
+  version                    Int                    @default(1)
+  customer                   Customer               @relation(fields: [customerId], references: [id])
+  vehicle                    Vehicle                @relation(fields: [vehicleId], references: [id])
+  destinationBranch          Branch                 @relation(fields: [destinationBranchId], references: [id])
+  assignedDriver             DriverProfile?         @relation(fields: [assignedDriverId], references: [id])
+  createdBy                  User                   @relation("CreatedBookings", fields: [createdById], references: [id])
+  assignments                DriverAssignment[]
+  statusHistory              BookingStatusHistory[]
+  inspection                 VehicleInspection?
+  confirmation               PickupConfirmation?
+  handover                   WorkshopHandover?
+  notifications              Notification[]
+  auditLogs                  AuditLog[]
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @updatedAt
+
+  @@index([scheduledPickupAt])
+  @@index([currentStatus])
+  @@index([destinationBranchId, scheduledPickupAt])
+  @@index([assignedDriverId, scheduledPickupAt])
+  @@index([vehicleRegistrationNumber])
+  @@index([primaryPhone])
+}
+
+model DriverAssignment {
+  id              String        @id @default(uuid()) @db.Uuid
+  bookingId       String        @db.Uuid
+  driverProfileId String        @db.Uuid
+  assignedById    String        @db.Uuid
+  assignedAt      DateTime      @default(now())
+  acceptedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  active          Boolean       @default(true)
+  booking         PickupBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  driverProfile   DriverProfile @relation(fields: [driverProfileId], references: [id])
+
+  @@index([driverProfileId, assignedAt])
+  @@index([bookingId, active])
+}
+
+model BookingStatusHistory {
+  id          String        @id @default(uuid()) @db.Uuid
+  bookingId   String        @db.Uuid
+  fromStatus  BookingStatus?
+  toStatus    BookingStatus
+  changedById String        @db.Uuid
+  notes       String?
+  createdAt   DateTime      @default(now())
+  booking     PickupBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+}
+
+model VehicleInspection {
+  id                            String            @id @default(uuid()) @db.Uuid
+  bookingId                     String            @unique @db.Uuid
+  odometerReading               Int
+  fuelLevel                     String
+  exteriorCondition             String
+  interiorCondition             String
+  existingScratches             String?
+  existingDents                 String?
+  windshieldCondition           String
+  tyreCondition                 String
+  warningLights                 String?
+  numberOfKeysReceived          Int
+  rcBookReceived                Boolean
+  insuranceCopyReceived         Boolean
+  accessoriesReceived           String?
+  customerBelongings            String?
+  additionalNotes               String?
+  customerAcknowledgementName   String
+  customerAcknowledged          Boolean
+  customerAcknowledgementAt     DateTime
+  booking                       PickupBooking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  images                        InspectionImage[]
+  createdAt                     DateTime          @default(now())
+}
+
+model InspectionImage {
+  id           String            @id @default(uuid()) @db.Uuid
+  inspectionId String            @db.Uuid
+  fileName     String
+  filePath     String
+  mimeType     String
+  sizeBytes    Int
+  inspection   VehicleInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime          @default(now())
+}
+
+model PickupConfirmation {
+  id          String        @id @default(uuid()) @db.Uuid
+  bookingId   String        @unique @db.Uuid
+  name        String
+  confirmedAt DateTime      @default(now())
+  method      String        @default("CHECKBOX")
+  booking     PickupBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model WorkshopHandover {
+  id                    String        @id @default(uuid()) @db.Uuid
+  bookingId             String        @unique @db.Uuid
+  confirmedOdometer     Int
+  confirmedKeys         Int
+  receivedAt            DateTime
+  receivingEmployee     String
+  discrepancyNotes      String?
+  accepted              Boolean       @default(false)
+  acceptedById          String        @db.Uuid
+  booking               PickupBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdAt             DateTime      @default(now())
+}
+
+model Notification {
+  id          String             @id @default(uuid()) @db.Uuid
+  bookingId   String?            @db.Uuid
+  channel     String
+  recipient   String
+  template    String
+  payload     Json
+  status      NotificationStatus @default(QUEUED)
+  providerRef String?
+  error       String?
+  booking     PickupBooking?     @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  createdAt   DateTime           @default(now())
+}
+
+model AuditLog {
+  id          String         @id @default(uuid()) @db.Uuid
+  actorId     String?        @db.Uuid
+  bookingId   String?        @db.Uuid
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  actor       User?          @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  booking     PickupBooking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+
+  @@index([action, createdAt])
+}
+
+model ApplicationSetting {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+}

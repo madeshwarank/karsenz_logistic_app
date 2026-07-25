@@ -1,0 +1,11 @@
+{
+  "name": "@karsenz/config",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "echo config",
+    "lint": "echo config",
+    "type-check": "echo config",
+    "test": "echo config"
+  }
+}
